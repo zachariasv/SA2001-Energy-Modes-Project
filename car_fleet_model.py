@@ -4,22 +4,22 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def simulate_fleet_evolution(investment_schedule: List):
-    # Initial fleet composition (millions of vehicles)
-    initial_gas = 5_000_000      # 80% of 15M total fleet
-    initial_hybrid = 1_250_000   # 15% of 15M total fleet  
-    initial_ev = 750_000       # 5% of 15M total fleet
+    # Initial fleet composition
+    initial_gas = 5_000_000
+    initial_hybrid = 1_250_000
+    initial_ev = 750_000
 
-    # Annual retirement rates (fraction of fleet retired each year) as functions of year and fleet size (or constants)
+    # Annual retirement rates (fraction of fleet retired each year) as constants
     retirement_rate_gas = 1/17.8
     retirement_rate_hybrid = 1/25
     retirement_rate_ev = 1/18.4
 
-    # Annual growth rates as function of year and fleet size (or constants)
+    # Annual growth rates as constants
     growth_rate_gas = 0.0077 + retirement_rate_gas
     growth_rate_hybrid = 0.0117 + retirement_rate_hybrid
     growth_rate_ev = 0.0122 + retirement_rate_ev
 
-    # Emissions per car per year (tons CO2e) as functions of year and fleet size (or constants)
+    # Emissions per car per year (tons CO2e) as constants
     gas_car_emissions_per_car = 3
     hybrid_car_emissions_per_car = 2.1
     ev_electricity_demand_per_car = 3.0  # MWh per year
