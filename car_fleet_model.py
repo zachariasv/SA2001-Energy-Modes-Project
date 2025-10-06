@@ -5,9 +5,9 @@ warnings.filterwarnings('ignore')
 
 def simulate_fleet_evolution(investment_schedule: List):
     # Initial fleet composition
-    initial_gas = 5_000_000
-    initial_hybrid = 1_250_000
-    initial_ev = 750_000
+    initial_gas = 4_115_000
+    initial_hybrid = 525_000
+    initial_ev = 360_000
 
     # Annual retirement rates (fraction of fleet retired each year) as constants
     retirement_rate_gas = 1/17.8
