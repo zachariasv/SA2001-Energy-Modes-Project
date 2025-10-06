@@ -10,27 +10,27 @@ def simulate_fleet_evolution(investment_schedule: List):
     initial_ev = 750_000       # 5% of 15M total fleet
 
     # Annual retirement rates (fraction of fleet retired each year) as functions of year and fleet size (or constants)
-    retirement_rate_gas = lambda year, gas_fleet: 1/15 
-    retirement_rate_hybrid = lambda year, hybrid_fleet: 1/16
-    retirement_rate_ev = lambda year, ev_fleet: 1/18
+    retirement_rate_gas = 1/17.8
+    retirement_rate_hybrid = 1/25
+    retirement_rate_ev = 1/18.4
 
     # Annual growth rates as function of year and fleet size (or constants)
-    growth_rate_gas = lambda year, gas_fleet: 0.05
-    growth_rate_hybrid = lambda year, hybrid_fleet: 0.08
-    growth_rate_ev = lambda year, ev_fleet: 0.08
+    growth_rate_gas = 0.0077 + retirement_rate_gas
+    growth_rate_hybrid = 0.0117 + retirement_rate_hybrid
+    growth_rate_ev = 0.0122 + retirement_rate_ev
 
     # Emissions per car per year (tons CO2e) as functions of year and fleet size (or constants)
-    gas_car_emissions_per_car = lambda t, gas_fleet: 4.6 * (0.98 ** t)  # Decreasing by 2% per year
-    hybrid_car_emissions_per_car = lambda t, hybrid_fleet: 2.3 * (0.97 ** t)  # Decreasing by 3% per year
-    ev_electricity_demand_per_car = lambda t, ev_fleet: 3.0  # MWh per year, assumed constant
+    gas_car_emissions_per_car = 3
+    hybrid_car_emissions_per_car = 2.1
+    ev_electricity_demand_per_car = 3.0  # MWh per year
     
     # Emission per newly produced car (tons CO2e)
-    new_gas_car_emissions = 10.0
-    new_hybrid_car_emissions = 7.0
-    new_ev_car_emissions = 5.0
+    new_gas_car_emissions = 7.5 # Between 5 to 10
+    new_hybrid_car_emissions = 9 # Between 6 to 12
+    new_ev_car_emissions = 11.5 # Between 8 to 15
 
     # Cost of gas to EV replacement
-    cost_per_ev = 40_000  # Cost to purchase one EV
+    cost_per_ev = 25_000  # Cost to purchase one EV
 
     # Initialize parameters
     results = []
@@ -44,9 +44,9 @@ def simulate_fleet_evolution(investment_schedule: List):
     
     for i, investment in enumerate(investment_schedule):
         # Retirements
-        gas_retired = int(gas_fleet * retirement_rate_gas(i, gas_fleet))
-        hybrid_retired = int(hybrid_fleet * retirement_rate_hybrid(i, hybrid_fleet))
-        ev_retired = int(ev_fleet * retirement_rate_ev(i, ev_fleet))
+        gas_retired = int(gas_fleet * retirement_rate_gas)
+        hybrid_retired = int(hybrid_fleet * retirement_rate_hybrid)
+        ev_retired = int(ev_fleet * retirement_rate_ev)
 
         # Retire cars from fleet
         gas_fleet = int(max(gas_fleet - gas_retired, 0))
@@ -63,9 +63,9 @@ def simulate_fleet_evolution(investment_schedule: List):
         surplus_investment = investment - (actual_gas_to_ev_replacements + actual_hybrid_to_ev_replacements) * cost_per_ev
 
         # New purchases
-        gas_purchases = int(gas_fleet * growth_rate_gas(i, gas_fleet))
-        hybrid_purchases = int(hybrid_fleet * growth_rate_hybrid(i, hybrid_fleet))
-        ev_purchases = int(ev_fleet * growth_rate_ev(i, ev_fleet))
+        gas_purchases = int(gas_fleet * growth_rate_gas)
+        hybrid_purchases = int(hybrid_fleet * growth_rate_hybrid)
+        ev_purchases = int(ev_fleet * growth_rate_ev)
 
         # Add new purchases to fleet
         gas_fleet += gas_purchases
@@ -76,11 +76,11 @@ def simulate_fleet_evolution(investment_schedule: List):
         total_fleet = int(gas_fleet + hybrid_fleet + ev_fleet)
 
         # Calculate emissions and electricity demand
-        total_gas_emissions = gas_fleet * gas_car_emissions_per_car(i, gas_fleet) + gas_purchases * new_gas_car_emissions
-        total_hybrid_emissions = hybrid_fleet * hybrid_car_emissions_per_car(i, hybrid_fleet) + hybrid_purchases * new_hybrid_car_emissions
+        total_gas_emissions = gas_fleet * gas_car_emissions_per_car + gas_purchases * new_gas_car_emissions
+        total_hybrid_emissions = hybrid_fleet * hybrid_car_emissions_per_car + hybrid_purchases * new_hybrid_car_emissions
         total_ev_emissions = (ev_purchases + actual_gas_to_ev_replacements + actual_hybrid_to_ev_replacements) * new_ev_car_emissions
         total_emissions = total_gas_emissions + total_hybrid_emissions + total_ev_emissions
-        total_electricity_demand = ev_fleet * ev_electricity_demand_per_car(i, ev_fleet)
+        total_electricity_demand = ev_fleet * ev_electricity_demand_per_car
 
         results.append({
             "gas_emissions": total_gas_emissions,
