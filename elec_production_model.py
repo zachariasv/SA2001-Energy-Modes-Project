@@ -4,14 +4,17 @@ import numpy as np
 import pandas as pd
 
 # Constants TO CHANGE
-GAMMA_FF: float = 0.820  # ???? # kgCO2/kWh
+GAMMA_FF: float = 0.820  # kgCO2/kWh
+# Units
+# delta_i : years
+# T_i : years
+# p_i : kWh/sek/year
+# e_i : kgCO2/year
 PRODUCTION_TYPE_CONSTANTS: dict[str, dict[str, float]] = {
-    "Wind": {
-        "delta_i": 2.0,  # years
-        "T_i": 25.0,  # years
-        "p_i": (1000 / 2.5e6) * 0.25 * 24 * 365,  # ? kWh/year/SEK
-        "e_i": 0.011 * (1000 / 2.5e6) * 0.25 * 24 * 365,  # ? kgCO2/SEK
-    }
+    # "Wind": {"delta_i": 2.0, "T_i": 25.0},
+    # "Nuclear": {"delta_i": 7.5, "T_i": 40},
+    "Hydro": {"delta_i": 8.0, "T_i": 50, "p_i": 0.4, "e_i": 0.024 * 0.4 * 50},
+    # "Solar": {"delta_i": 0.5, "T_i": 25},
 }
 
 
