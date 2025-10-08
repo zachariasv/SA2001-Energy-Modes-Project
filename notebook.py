@@ -47,7 +47,7 @@ def _(mo):
 @app.cell
 def _(end_time_choice, np):
     T = end_time_choice.value
-    P_tilde = lambda tt: 40.5e6*(1-tt/18)*(tt<18) + 48.6e6*(1-tt/15)*(tt<15) + 2.43e6*(1-tt/19)*(tt<19) + 64.8e6*(1-tt/60)*(tt<60)
+    P_tilde = lambda tt: 40.5e9*(1-tt/18)*(tt<18) + 48.6e9*(1-tt/15)*(tt<15) + 2.43e9*(1-tt/19)*(tt<19) + 64.8e9*(1-tt/60)*(tt<60)
     t = np.arange(T+1)
     return P_tilde, T, t
 
@@ -163,9 +163,9 @@ def _(
     t,
     x_i,
 ):
-    df_elec = get_elec_simulation(t, df_fleet["ev_electricity_demand"].to_numpy()*1e3, x_i, int_of_x_i, P_tilde, lambda tt: 162e6*np.ones_like(tt))
+    df_elec = get_elec_simulation(t, df_fleet["ev_electricity_demand"].to_numpy()*1e3, x_i, int_of_x_i, P_tilde, lambda tt: 162e9*np.ones_like(tt))
     df_elec[[f"elec_prod_cap_{i}" for i in ["previous_infras"]+list(PRODUCTION_TYPE_CONSTANTS.keys())]].plot.area(linewidth=0.)
-    plt.plot(df_elec["elec_total_demand"]+162e6,c="k",linestyle="dashed", label="Elec total demand")
+    plt.plot(df_elec["elec_total_demand"],c="k",linestyle="dashed", label="Elec total demand")
     plt.legend()
     plt.ylabel("Elec clean production capacity per year (kWh)")
     plt.xlabel("$t$")
@@ -189,7 +189,7 @@ def _(PRODUCTION_TYPE_CONSTANTS, df_elec, df_fleet, pd, plt):
     df_emissions[["fleet_gas","fleet_hybrid"]] = df_fleet[["gas_emissions","hybrid_emissions"]]*1e3
     df_emissions["fleet_ev"] = df_fleet["total_emissions"]*1e3 - df_emissions["fleet_gas"] - df_emissions["fleet_hybrid"]
 
-    df_emissions.plot.area(linewidth=0.)
+    df_emissions.plot.area(linewidth=0., colormap="magma")
     plt.xlabel("$t$")
     plt.ylabel("kg$CO_2$")
     plt.gca()
