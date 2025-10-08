@@ -39,19 +39,17 @@ def _(mo):
 @app.cell
 def _(mo):
     end_time_choice = mo.ui.number(start=5, step=1, value=100, label=r"Time of interest $T$ (years)")
-    investment_per_year_choice = mo.ui.number(start=0, step=0.1, value=10, label="Total investment per year (B SEK)")
 
-    mo.vstack([end_time_choice,investment_per_year_choice])
-    return end_time_choice, investment_per_year_choice
+    mo.vstack([end_time_choice])
+    return (end_time_choice,)
 
 
 @app.cell
-def _(end_time_choice, investment_per_year_choice, np):
+def _(end_time_choice, np):
     T = end_time_choice.value
-    V_tot = investment_per_year_choice.value*1e9
-    P_tilde = lambda tt: 40.5e9*(1-tt/18)*(tt<18) + 48.6e9*(1-tt/15)*(tt<15) + 2.43e9*(1-tt/19)*(tt<19) + 64.8e9*(1-tt/60)*(tt<60)
+    P_tilde = lambda tt: 40.5e6*(1-tt/18)*(tt<18) + 48.6e6*(1-tt/15)*(tt<15) + 2.43e6*(1-tt/19)*(tt<19) + 64.8e6*(1-tt/60)*(tt<60)
     t = np.arange(T+1)
-    return P_tilde, V_tot, t
+    return P_tilde, T, t
 
 
 @app.cell(hide_code=True)
@@ -61,30 +59,54 @@ def _(mo):
 
 
 @app.cell
-def _(V_tot, mo):
-    x_Hydro_choice = mo.ui.slider(start=0, stop=V_tot/1e9, value=0, step=0.5, label="$x_{Hydro}$ (B SEK)",show_value=True)
-
-    mo.vstack([x_Hydro_choice])
-    return (x_Hydro_choice,)
+def _(P_tilde, plt, t):
+    plt.plot(P_tilde(t))
+    plt.title("Clean energy capacity w/o investement&maintenance")
+    plt.ylabel("kWh/year")
+    plt.xlabel("$t$ (years)")
+    return
 
 
 @app.cell
-def _(V_tot, mo, np, t, x_Hydro_choice):
-    x_i_choice = {"Hydro":x_Hydro_choice.value*1e9}
+def _(mo):
+    x_Wind_choice = mo.ui.number(start=0, value=0, step=.1, label="$x_{Wind}$ (B SEK/year)")
+    x_Nuclear_choice = mo.ui.number(start=0, value=0, step=.1, label="$x_{Nuclear}$ (B SEK/year)")
+    x_Hydro_choice = mo.ui.number(start=0, value=0, step=.1, label="$x_{Hydro}$ (B SEK/year)")
+    x_Solar_choice = mo.ui.number(start=0, value=0, step=.1, label="$x_{Solar}$ (B SEK/year)")
+    x_EV_choice = mo.ui.number(start=0, value=0, step=.1, label="$x_{EV}$ (B SEK/year)")
 
-    ev_investment = (V_tot - sum([x for x in x_i_choice.values()]))*np.ones_like(t)
+    mo.vstack([x_Wind_choice, x_Nuclear_choice, x_Hydro_choice, x_Solar_choice, x_EV_choice])
+    return (
+        x_EV_choice,
+        x_Hydro_choice,
+        x_Nuclear_choice,
+        x_Solar_choice,
+        x_Wind_choice,
+    )
 
-    x_i = {key:(lambda tt: np.ones_like(tt)*value_choice) for key,value_choice in x_i_choice.items()}
-    int_of_x_i = {key:(lambda tt: tt*value_choice) for key,value_choice in x_i_choice.items()}
 
-    mo.md(f"Investment in vehicule transition {ev_investment[0]:.2e} SEK")
+@app.cell
+def _(
+    np,
+    t,
+    x_EV_choice,
+    x_Hydro_choice,
+    x_Nuclear_choice,
+    x_Solar_choice,
+    x_Wind_choice,
+):
+    x_i_choice = {
+        "Wind":x_Wind_choice.value*1e9,
+        "Nuclear":x_Nuclear_choice.value*1e9,
+        "Hydro":x_Hydro_choice.value*1e9,
+        "Solar":x_Solar_choice.value*1e9
+    }
+
+    ev_investment = x_EV_choice.value*1e9*np.ones_like(t)
+
+    x_i = {key:(lambda tt, val=value_choice: np.ones_like(tt)*val) for key,value_choice in x_i_choice.items()}
+    int_of_x_i = {key:(lambda tt, val=value_choice: tt*val) for key,value_choice in x_i_choice.items()}
     return ev_investment, int_of_x_i, x_i
-
-
-@app.cell(hide_code=True)
-def _(ev_investment, mo, np):
-    mo.md(rf"""{"!!! There is not enough money" if np.any(ev_investment[0]<0) else "The choice is valid (enough moeny at each time)"}""")
-    return
 
 
 @app.cell
@@ -115,6 +137,14 @@ def _(ev_investment, plt, simulate_fleet_evolution):
     return (df_fleet,)
 
 
+@app.cell
+def _(df_fleet, plt):
+    (1e3*df_fleet["ev_electricity_demand"]).plot()
+    plt.xlabel("$t$ (years)")
+    plt.ylabel("Fleet's electrical demand per year (kWh)")
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""## Production mode simulation""")
@@ -128,15 +158,16 @@ def _(
     df_fleet,
     get_elec_simulation,
     int_of_x_i,
+    np,
     plt,
     t,
     x_i,
 ):
-    df_elec = get_elec_simulation(t, df_fleet["ev_electricity_demand"].to_numpy()*1e3+P_tilde(0), x_i, int_of_x_i, P_tilde)
+    df_elec = get_elec_simulation(t, df_fleet["ev_electricity_demand"].to_numpy()*1e3, x_i, int_of_x_i, P_tilde, lambda tt: 162e6*np.ones_like(tt))
     df_elec[[f"elec_prod_cap_{i}" for i in ["previous_infras"]+list(PRODUCTION_TYPE_CONSTANTS.keys())]].plot.area(linewidth=0.)
-    plt.plot(df_elec["elec_total_demand"],c="k",linestyle="dashed", label="Elec total demand")
+    plt.plot(df_elec["elec_total_demand"]+162e6,c="k",linestyle="dashed", label="Elec total demand")
     plt.legend()
-    plt.ylabel("Elec clean production capacity (kWh)")
+    plt.ylabel("Elec clean production capacity per year (kWh)")
     plt.xlabel("$t$")
     plt.gca().axis('tight')
     plt.gca()
@@ -162,6 +193,12 @@ def _(PRODUCTION_TYPE_CONSTANTS, df_elec, df_fleet, pd, plt):
     plt.xlabel("$t$")
     plt.ylabel("kg$CO_2$")
     plt.gca()
+    return (df_emissions,)
+
+
+@app.cell(hide_code=True)
+def _(T, df_emissions, mo):
+    mo.md(rf"""*Total emmisions over time is* **{df_emissions.sum().sum():e} $kgCO_2$** *over* **{T} years**""")
     return
 
 

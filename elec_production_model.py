@@ -9,12 +9,32 @@ GAMMA_FF: float = 0.820  # kgCO2/kWh
 # delta_i : years
 # T_i : years
 # p_i : kWh/sek/year
-# e_i : kgCO2/year
+# e_i : kgCO2/sek
 PRODUCTION_TYPE_CONSTANTS: dict[str, dict[str, float]] = {
-    # "Wind": {"delta_i": 2.0, "T_i": 25.0},
-    # "Nuclear": {"delta_i": 7.5, "T_i": 40},
-    "Hydro": {"delta_i": 8.0, "T_i": 50, "p_i": 0.4, "e_i": 0.024 * 0.4 * 50},
-    # "Solar": {"delta_i": 0.5, "T_i": 25},
+    "Wind": {
+        "delta_i": 2.0,
+        "T_i": 25.0,
+        "p_i": 365 * 24 / 26026,
+        "e_i": 0.011 * 25 * 365 * 24 / 26026,
+    },
+    "Nuclear": {
+        "delta_i": 7.5,
+        "T_i": 40,
+        "p_i": 365 * 24 / 66382,
+        "e_i": 0.012 * 40 * 365 * 24 / 66382,
+    },
+    "Hydro": {
+        "delta_i": 8.0,
+        "T_i": 50,
+        "p_i": 365 * 24 / 42461,
+        "e_i": 0.024 * 50 * 365 * 24 / 42461,
+    },
+    "Solar": {
+        "delta_i": 0.5,
+        "T_i": 25,
+        "p_i": 365 * 24 / 71895,
+        "e_i": 0.048 * 25 * 365 * 24 / 71895,
+    },
 }
 
 
@@ -45,10 +65,10 @@ def get_elec_simulation(
     x_i: dict[str, Callable[[np.ndarray], np.ndarray]],
     int_of_x_i: dict[str, Callable[[np.ndarray], np.ndarray]],
     P_tilde: Callable[[np.ndarray], np.ndarray] = (
-        lambda t: 12 * 16e6 * (1 - t / 20) * (1 - t / 20 > 0)
+        lambda t: 162e6 * (1 - t / 20) * (1 - t / 20 > 0)
     ),  # 20 years left assumption
     other_electric_demand: Callable[[np.ndarray], np.ndarray] = (
-        lambda t: 12 * 16e6 * np.ones_like(t)
+        lambda t: 162e6 * np.ones_like(t)
     ),  # Production in Dec 2024 -> extrapolation # kWh/year
 ) -> pd.DataFrame:
     df = get_productions_capacity(t, int_of_x_i, P_tilde)
