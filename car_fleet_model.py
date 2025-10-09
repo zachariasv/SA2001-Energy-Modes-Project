@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from typing import List
 import warnings
 warnings.filterwarnings('ignore')
@@ -15,9 +16,10 @@ def simulate_fleet_evolution(investment_schedule: List):
     retirement_rate_ev = 1/18.4
 
     # Annual growth rates as constants
-    growth_rate_gas = 0.0077 + retirement_rate_gas
-    growth_rate_hybrid = 0.0117 + retirement_rate_hybrid
-    growth_rate_ev = 0.0122 + retirement_rate_ev
+    total_growth_rate = 0.06
+    growth_rate_gas = lambda t: (0.95**t) * 0.378 + (1-0.95**t) * 0.05
+    growth_rate_hybrid = lambda t: (0.95**t) * 0.432 + (1-0.95**t) * 0.10
+    growth_rate_ev = lambda t: (0.95**t) * 0.156 + (1-0.95**t) * 0.85
 
     # Emissions per car per year (tons CO2e) as constants
     gas_car_emissions_per_car = 3
@@ -30,7 +32,7 @@ def simulate_fleet_evolution(investment_schedule: List):
     new_ev_car_emissions = 11.5 # Between 8 to 15
 
     # Cost of gas to EV replacement
-    cost_per_ev = 25_000  # Cost to purchase one EV
+    cost_per_ev = 300_000 * 0.5  # Cost to purchase one EV in SEK
 
     # Initialize parameters
     results = []
@@ -63,9 +65,10 @@ def simulate_fleet_evolution(investment_schedule: List):
         surplus_investment = investment - (actual_gas_to_ev_replacements + actual_hybrid_to_ev_replacements) * cost_per_ev
 
         # New purchases
-        gas_purchases = int(gas_fleet * growth_rate_gas)
-        hybrid_purchases = int(hybrid_fleet * growth_rate_hybrid)
-        ev_purchases = int(ev_fleet * growth_rate_ev)
+        new_cars = int((gas_fleet + hybrid_fleet + ev_fleet) * total_growth_rate)
+        gas_purchases = int(new_cars * growth_rate_gas(i))
+        hybrid_purchases = int(new_cars * growth_rate_hybrid(i))
+        ev_purchases = int(new_cars * growth_rate_ev(i))
 
         # Add new purchases to fleet
         gas_fleet += gas_purchases
@@ -98,9 +101,10 @@ def simulate_fleet_evolution(investment_schedule: List):
 
 if __name__ == "__main__":
     # Example usage
-    investment_schedule = [200_000_000, 300_000_000, 400_000_000, 500_000_000, 600_000_000] * 6  # 30 years
+    #investment_schedule = [200_000_000, 300_000_000, 400_000_000, 500_000_000, 600_000_000] * 6  # 30 years
+    investment_schedule = [30_000_000_000] * 100  # 30 years
     df_results = simulate_fleet_evolution(investment_schedule)
     print(df_results)
     import matplotlib.pyplot as plt
-    df_results[["gas_fleet", "hybrid_fleet", "ev_fleet"]].plot(title="Annual Fleet Composition Over Time")
+    df_results[["gas_fleet", "hybrid_fleet", "ev_fleet"]].plot(kind='area', title="Annual Fleet Composition Over Time", stacked=True, ylim=(0, 10_000_000))
     plt.show()
